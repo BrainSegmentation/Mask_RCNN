@@ -1,2 +1,2 @@
 FROM ufoym/deepo:all-jupyter-py36-cu90
-RUN pip install -r requirements.txt
+RUN pip install opencv-python h5py imgaug
