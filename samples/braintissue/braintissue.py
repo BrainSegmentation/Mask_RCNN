@@ -59,7 +59,7 @@ from mrcnn import model as modellib
 from mrcnn import visualize
 
 # Path to trained weights file
-COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
+COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "weights/mask_rcnn_coco.h5")
 
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
@@ -71,7 +71,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue/")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = []
+VAL_IMAGE_IDS = ["silicon_wafer_00002"]
 #     "0c2550a23b8a0f29a7575de8c61690d3c31bc897dd5ba66caec201d201a278c2",
 #     "92f31f591929a30e4309ab75185c96ff4314ce0a7ead2ed2c2171897ad1da0c7",
 #     "1e488c42eb1a54a3e8412b1f12cde530f950f238d71078f2ede6a85a02168e1f",
@@ -110,14 +110,14 @@ class BraintissueConfig(Config):
     NAME = "Braintissue"
 
     # Adjust depending on your GPU memory
-    IMAGES_PER_GPU = 6
+    IMAGES_PER_GPU = 2
 
     # Number of classes (including background)
     NUM_CLASSES = 1 + 1  # Background + Braintissue
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (657 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
-    VALIDATION_STEPS = max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
+    STEPS_PER_EPOCH = (5 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Don't exclude based on confidence. Since we have two classes
     # then 0.5 is the minimum anyway as it picks between Braintissue and BG
@@ -148,8 +148,10 @@ class BraintissueConfig(Config):
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 64
 
-    # Image mean (RGB)
-    MEAN_PIXEL = np.array([43.53, 39.56, 48.22])
+    # Greyscale adjustments
+    IMAGE_CHANNEL_COUNT = 1
+    MEAN_PIXEL = np.array([43.5])
+    
 
     # If enabled, resizes instance masks to a smaller size to reduce
     # memory load. Recommended when using high-resolution images.
@@ -205,7 +207,7 @@ class BraintissueDataset(utils.Dataset):
         # "train": use data from stage1_train minus the hard-coded list above
         # else: use the data from the specified sub-directory
         assert subset in ["train", "val", "stage1_train", "stage1_test", "stage2_test"]
-        subset_dir = "stage1_train" if subset in ["train", "val"] else subset
+        subset_dir = "train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
             image_ids = VAL_IMAGE_IDS
@@ -220,7 +222,7 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
+                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
 
     def load_mask(self, image_id):
         """Generate instance masks for an image.
@@ -243,6 +245,12 @@ class BraintissueDataset(utils.Dataset):
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID, we return an array of ones
         return mask, np.ones([mask.shape[-1]], dtype=np.int32)
+
+    def load_image(self, image_id):
+        # Load image
+        image = skimage.io.imread(self.image_info[image_id]['path'])
+        # If grayscale. Convert to RGB for consistency.
+        return image
 
     def image_reference(self, image_id):
         """Return the path of the image."""
@@ -271,16 +279,16 @@ def train(model, dataset_dir, subset):
 
     # Image augmentation
     # http://imgaug.readthedocs.io/en/latest/source/augmenters.html
-    augmentation = iaa.SomeOf((0, 2), [
-        iaa.Fliplr(0.5),
-        iaa.Flipud(0.5),
-        iaa.OneOf([iaa.Affine(rotate=90),
-                   iaa.Affine(rotate=180),
-                   iaa.Affine(rotate=270)]),
-        iaa.Multiply((0.8, 1.5)),
-        # iaa.GaussianBlur(sigma=(0.0, 5.0))
-    ])
-
+#    augmentation = iaa.SomeOf((0, 2), [
+#        iaa.Fliplr(0.5),
+#        iaa.Flipud(0.5),
+#        iaa.OneOf([iaa.Affine(rotate=90),
+#                   iaa.Affine(rotate=180),
+#                   iaa.Affine(rotate=270)]),
+#        iaa.Multiply((0.8, 1.5)),
+#        # iaa.GaussianBlur(sigma=(0.0, 5.0))
+#    ])
+#
     # *** This training schedule is an example. Update to your needs ***
 
     # If starting from imagenet, train heads only for a bit
@@ -289,16 +297,16 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=20,
-                augmentation=augmentation,
+                epochs=1,
+                #augmentation=augmentation,
                 layers='heads')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=40,
-                augmentation=augmentation,
+                epochs=1,
+                #augmentation=augmentation,
                 layers='all')
 
 
