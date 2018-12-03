@@ -247,9 +247,12 @@ class BraintissueDataset(utils.Dataset):
         return mask, np.ones([mask.shape[-1]], dtype=np.int32)
 
     def load_image(self, image_id):
-        # Load image
-        image = skimage.io.imread(self.image_info[image_id]['path'])
-        # If grayscale. Convert to RGB for consistency.
+        """ Load an image as grayscale
+        Returns:
+        	image: the loaded image as 2D array
+        """
+        # If necessary, convert to grayscale with parameter 0
+        image = skimage.io.imread(self.image_info[image_id]['path'], 0)
         return image
 
     def image_reference(self, image_id):
