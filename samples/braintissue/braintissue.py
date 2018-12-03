@@ -110,7 +110,7 @@ class BraintissueConfig(Config):
     NAME = "Braintissue"
 
     # Adjust depending on your GPU memory
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
     NUM_CLASSES = 1 + 1  # Background + Braintissue
@@ -177,7 +177,7 @@ class BraintissueInferenceConfig(BraintissueConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # Don't resize imager for inferencing
-    IMAGE_RESIZE_MODE = "pad64"
+    IMAGE_RESIZE_MODE = "square"
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more proposals.
     RPN_NMS_THRESHOLD = 0.7
@@ -496,7 +496,7 @@ if __name__ == '__main__':
         # number of classes
         model.load_weights(weights_path, by_name=True, exclude=[
             "mrcnn_class_logits", "mrcnn_bbox_fc",
-            "mrcnn_bbox", "mrcnn_mask"])
+            "mrcnn_bbox", "mrcnn_mask", "conv1"])
     else:
         model.load_weights(weights_path, by_name=True)
 
