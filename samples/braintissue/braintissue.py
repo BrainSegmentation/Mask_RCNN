@@ -189,6 +189,9 @@ class BraintissueInferenceConfig(BraintissueConfig):
 
 class BraintissueDataset(utils.Dataset):
 
+    # masks to be used: either "tissue" or "magnet"
+    MASK_OF = "tissue"
+
     def load_Braintissue(self, dataset_dir, subset):
         """Load a subset of the nuclei dataset.
 
@@ -224,8 +227,8 @@ class BraintissueDataset(utils.Dataset):
                 image_id=image_id,
                 path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
 
-    def load_mask(self, image_id):
-        """Generate instance masks for an image.
+    def load_mask(self, image_id, scale=1., padding=None, crop=None):
+        """Generate instance masks for an image and resize them
        Returns:
         masks: A bool array of shape [height, width, instance count] with
             one mask per instance.
@@ -238,8 +241,20 @@ class BraintissueDataset(utils.Dataset):
         # Read mask files from .png image
         mask = []
         for f in next(os.walk(mask_dir))[2]:
-            if f.endswith(".png"):
-                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)
+            if f.startswith(MASK_OF) and f.endswith(".png"):
+                # load mask and nest into 1 extra dim to be able to use resize_mask()
+                m = np.array([skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)])
+
+                # warning: on a big image like 6000x6000 with 1000 objects
+                # this loop will likely overflow ram
+
+                # resize
+                m = utils.resize_mask(m, scale, padding, crop)
+
+                # flatten out last dim to get 2D mask
+                h, w, _ = m.shape
+                m = m.reshape((h, w))
+
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -253,6 +268,7 @@ class BraintissueDataset(utils.Dataset):
         """
         # If necessary, convert to grayscale with parameter 0
         image = skimage.io.imread(self.image_info[image_id]['path'], 0)
+
         return image
 
     def image_reference(self, image_id):
