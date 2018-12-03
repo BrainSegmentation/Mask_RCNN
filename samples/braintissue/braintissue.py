@@ -8,7 +8,7 @@ Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 
 
-Copied from Mask_RCNN/samples/Braintissue/Braintissue.py
+Copied from Mask_RCNN/samples/nucleus/nucleus.py
 and modified for BrainSegmentation by Niklas Schmitz
 
 ------------------------------------------------------------
