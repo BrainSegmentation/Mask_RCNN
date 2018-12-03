@@ -148,7 +148,7 @@ class BraintissueConfig(Config):
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 64
 
-    # Greyscale adjustments
+    # Grayscale adjustments
     IMAGE_CHANNEL_COUNT = 1
     MEAN_PIXEL = np.array([43.5])
     
@@ -300,7 +300,7 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=1,
+                epochs=2,
                 #augmentation=augmentation,
                 layers='heads')
 
@@ -308,7 +308,7 @@ def train(model, dataset_dir, subset):
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=1,
+                epochs=2,
                 #augmentation=augmentation,
                 layers='all')
 
