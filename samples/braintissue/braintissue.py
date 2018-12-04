@@ -189,9 +189,6 @@ class BraintissueInferenceConfig(BraintissueConfig):
 
 class BraintissueDataset(utils.Dataset):
 
-    # masks to be used: either "tissue" or "magnet"
-    MASK_OF = "tissue"
-
     def load_Braintissue(self, dataset_dir, subset):
         """Load a subset of the nuclei dataset.
 
@@ -225,7 +222,7 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
+                path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
 
     def load_mask(self, image_id, scale=1., padding=None, crop=None):
         """Generate instance masks for an image and resize them
@@ -241,7 +238,7 @@ class BraintissueDataset(utils.Dataset):
         # Read mask files from .png image
         mask = []
         for f in next(os.walk(mask_dir))[2]:
-            if f.startswith(MASK_OF) and f.endswith(".png"):
+            if f.endswith(".png"):
                 # load mask and nest into 1 extra dim to be able to use resize_mask()
                 m = np.array([skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)])
 
