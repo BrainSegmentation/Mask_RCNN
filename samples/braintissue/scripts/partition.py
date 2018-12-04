@@ -25,7 +25,7 @@ def main():
     # Defaults 
     in_path = './' + sys.argv[1]
     mask_path = './' + sys.argv[2]
-    out_path = './results/'
+    out_path = './partitions/'
     k = 9
     # User Input
     if len(sys.argv) == 4:
@@ -36,7 +36,7 @@ def main():
 
 #   try: 
     mask_paths = []
-    print('Making a ton of dirs and files, prepare your ass...')
+    print('Making a ton of dirs and files...')
     for file in os.listdir(mask_path):
         filename = os.fsdecode(file)
         if filename.endswith(".png") or filename.endswith(".bmp"):
@@ -47,16 +47,19 @@ def main():
     print('Partitioning Image(s)')
     for i, partitions in enumerate(zip(crop(in_path, k), [crop(path, k) for path in mask_paths])):
         height, width = partitions[0].size
-        print(height, width)
-        for j, sub_img in enumerate(partitions):
+        img = Image.new('RGB', (height, width), 255)
+        img.paste(partitions[0])
+        curr_out_path = out_path + 'section-{}/'.format(i)
+        path = os.path.join(curr_out_path, 'wafer-sub-{}.png'.format(i))
+        mkdir(curr_out_path)
+        img.save(path)
+        counter += 1        
+        for j, sub_img in enumerate(partitions[1]):
+            height, width = sub_img.size
             img = Image.new('RGB', (height, width), 255)
             img.paste(sub_img)
             curr_out_path = out_path + 'section-{}/'.format(i)
-            if j == 0:
-                path = os.path.join(curr_out_path, 'man-{}.png'.format(i))
-            else:
-                path = os.path.join(curr_out_path, 'sub-{}.png'.format(i))
-            mkdir(curr_out_path)
+            path = os.path.join(curr_out_path, 'sub-{0}-{1}.png'.format(i, j))
             img.save(path)
             counter += 1 
         
