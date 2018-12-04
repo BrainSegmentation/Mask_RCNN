@@ -1,5 +1,5 @@
 import sys, os
-from PIL import Image
+import Image
 
 def crop(in_path, k):
     img = Image.open(in_path)
@@ -13,12 +13,14 @@ def crop(in_path, k):
 
 def mkdir(dir):
     try:
-        os.mkdir(dir)
+        os.makedirs(dir)
     except FileExistsError:
-        ...
-
+        pass
+        
 def main():
-    ''' Takes in_path, out_path, k (num of partitions is k**2) '''
+    ''' Tiles an image into a k*k grid of seperate images
+    Takes in_path, out_path, k (num of partitions is k^2) 
+    '''
     if len(sys.argv) > 4 or len(sys.argv) < 2:
         print('Usage: partition.py <in_path> <out_path> <k>, out and k optional')
         sys.exit()
@@ -35,16 +37,28 @@ def main():
 
     try: 
         print('Partitioning Image')
-        i = 0
         for i, sub_img in enumerate(crop(in_path, k)):
             height, width = sub_img.size
-            img = Image.new('RGB', (height, width), 255)
+            img = Image.new('L', (height, width), 255)
             img.paste(sub_img)
-            path = os.path.join(out_path, 'sub-{}.png'.format(i))
-            mkdir(out_path)
+            path = os.path.join(out_path, str(i), '/images/', 'sub-{}.png'.format(i))
+            mkdir(out_path.join(str(i), '/images/'))
             img.save(path)
-            i += 1
-        print('Saved {0} images to {1}'.format(i, out_path))
+        print('Saved {0} images to {1}'.format(k*k, out_path))
+    except ValueError:
+        print('Likely bad path')
+
+    try: 
+        print('Partitioning Masks')
+        for f in next(os.walk(mask_dir))[2]:
+            for i, sub_img in enumerate(crop(os.path.join(mask_dir, f), k)):
+                height, width = sub_img.size
+                img = Image.new('L', (height, width), 255)
+                img.paste(sub_img)
+                path = os.path.join(out_path, str(i), '/images/', 'sub-{}.png'.format(i))
+                mkdir(out_path.join(str(i), '/images/'))
+                img.save(path)
+        print('Saved {0} images to {1}'.format(k*k, out_path))
     except ValueError:
         print('Likely bad path')
 
