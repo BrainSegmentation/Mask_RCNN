@@ -128,10 +128,9 @@ class BraintissueConfig(Config):
     BACKBONE = "resnet50"
 
     # Input image resizing
-    # Random crops of size 512x512
-    IMAGE_RESIZE_MODE = "crop"
+    IMAGE_RESIZE_MODE = "square"
     IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
+    IMAGE_MAX_DIM = 1024
     IMAGE_MIN_SCALE = 2.0
 
     # Length of square anchor side in pixels
@@ -150,7 +149,7 @@ class BraintissueConfig(Config):
 
     # Grayscale adjustments
     IMAGE_CHANNEL_COUNT = 1
-    MEAN_PIXEL = np.array([43.5])
+    MEAN_PIXEL = np.array([184])
     
 
     # If enabled, resizes instance masks to a smaller size to reduce
@@ -224,7 +223,7 @@ class BraintissueDataset(utils.Dataset):
                 image_id=image_id,
                 path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
 
-    def load_mask(self, image_id, scale=1., padding=None, crop=None):
+    def load_mask(self, image_id):
         """Generate instance masks for an image and resize them
        Returns:
         masks: A bool array of shape [height, width, instance count] with
@@ -239,19 +238,7 @@ class BraintissueDataset(utils.Dataset):
         mask = []
         for f in next(os.walk(mask_dir))[2]:
             if f.endswith(".png"):
-                # load mask and nest into 1 extra dim to be able to use resize_mask()
                 m = np.array([skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)])
-
-                # warning: on a big image like 6000x6000 with 1000 objects
-                # this loop will likely overflow ram
-
-                # resize
-                m = utils.resize_mask(m, scale, padding, crop)
-
-                # flatten out last dim to get 2D mask
-                h, w, _ = m.shape
-                m = m.reshape((h, w))
-
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
         # Return mask, and array of class IDs of each instance. Since we have

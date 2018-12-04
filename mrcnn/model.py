@@ -1212,11 +1212,8 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
 
 
     # Load image and mask
-    # REMARK: changed to first resize image and then load masks, to
-    # resize each mask before loading the next, and passing parameters
-    # like mask, scal, padding, crop directly into load_mask 
-    # useful to avoid memory overflow                        - Niklas
     image = dataset.load_image(image_id)
+    mask, class_ids = dataset.load_mask(image_id)
     original_shape = image.shape
     image, window, scale, padding, crop = utils.resize_image(
         image,
@@ -1224,8 +1221,7 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
         min_scale=config.IMAGE_MIN_SCALE,
         max_dim=config.IMAGE_MAX_DIM,
         mode=config.IMAGE_RESIZE_MODE)
-    mask, class_ids = dataset.load_mask(image_id, scale, padding, crop)
-    # mask = utils.resize_mask(mask, scale, padding, crop)
+    mask = utils.resize_mask(mask, scale, padding, crop)
 
     # Random horizontal flips.
     # TODO: will be removed in a future update in favor of augmentation
