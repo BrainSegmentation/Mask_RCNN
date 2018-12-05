@@ -130,7 +130,7 @@ class BraintissueConfig(Config):
     # Input image resizing
     IMAGE_RESIZE_MODE = "square"
     IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 1024
+    IMAGE_MAX_DIM = 512
     IMAGE_MIN_SCALE = 2.0
 
     # Length of square anchor side in pixels
@@ -224,7 +224,7 @@ class BraintissueDataset(utils.Dataset):
                 path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
 
     def load_mask(self, image_id):
-        """Generate instance masks for an image and resize them
+        """Generate instance masks for an image
        Returns:
         masks: A bool array of shape [height, width, instance count] with
             one mask per instance.
