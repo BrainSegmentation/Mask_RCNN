@@ -241,6 +241,8 @@ class BraintissueDataset(utils.Dataset):
                 m = np.array([skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)])
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
+        print(f"print from braintissue.py:244 load_mask: mask.shape = {mask.shape}")
+
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID, we return an array of ones
         return mask, np.ones([mask.shape[-1]], dtype=np.int32)
