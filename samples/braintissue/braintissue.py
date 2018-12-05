@@ -224,7 +224,7 @@ class BraintissueDataset(utils.Dataset):
                 path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
 
     def load_mask(self, image_id):
-        """Generate instance masks for an image and resize them
+        """Generate instance masks for an image
        Returns:
         masks: A bool array of shape [height, width, instance count] with
             one mask per instance.
