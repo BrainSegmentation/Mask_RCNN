@@ -130,7 +130,7 @@ class BraintissueConfig(Config):
     # Input image resizing
     IMAGE_RESIZE_MODE = "square"
     IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 1024
+    IMAGE_MAX_DIM = 512
     IMAGE_MIN_SCALE = 2.0
 
     # Length of square anchor side in pixels
