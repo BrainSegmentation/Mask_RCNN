@@ -131,14 +131,14 @@ class BraintissueConfig(Config):
     IMAGE_RESIZE_MODE = "square"
     IMAGE_MIN_DIM = 512
     IMAGE_MAX_DIM = 512
-    IMAGE_MIN_SCALE = 2.0
+    IMAGE_MIN_SCALE = 0
 
     # Length of square anchor side in pixels
     RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
-    POST_NMS_ROIS_TRAINING = 1000
-    POST_NMS_ROIS_INFERENCE = 2000
+    POST_NMS_ROIS_TRAINING = 200
+    POST_NMS_ROIS_INFERENCE = 200
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more proposals.
@@ -154,7 +154,7 @@ class BraintissueConfig(Config):
 
     # If enabled, resizes instance masks to a smaller size to reduce
     # memory load. Recommended when using high-resolution images.
-    USE_MINI_MASK = False
+    USE_MINI_MASK = True
     MINI_MASK_SHAPE = (56, 56)  # (height, width) of the mini-mask
 
     # Number of ROIs per image to feed to classifier/mask heads
@@ -165,10 +165,10 @@ class BraintissueConfig(Config):
     TRAIN_ROIS_PER_IMAGE = 128
 
     # Maximum number of ground truth instances to use in one image
-    MAX_GT_INSTANCES = 2000
+    MAX_GT_INSTANCES = 50
 
     # Max number of final detections per image
-    DETECTION_MAX_INSTANCES = 2000
+    DETECTION_MAX_INSTANCES = 50
 
 
 class BraintissueInferenceConfig(BraintissueConfig):
@@ -238,10 +238,9 @@ class BraintissueDataset(utils.Dataset):
         mask = []
         for f in next(os.walk(mask_dir))[2]:
             if f.endswith(".png"):
-                m = np.array([skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)])
+                m = skimage.io.imread(os.path.join(mask_dir, f), as_gray=True).astype(np.bool)
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
-        print(f"print from braintissue.py:244 load_mask: mask.shape = {mask.shape}")
 
         # Return mask, and array of class IDs of each instance. Since we have
         # one class ID, we return an array of ones
@@ -252,8 +251,10 @@ class BraintissueDataset(utils.Dataset):
         Returns:
         	image: the loaded image as 2D array
         """
-        # If necessary, convert to grayscale with parameter 0
-        image = skimage.io.imread(self.image_info[image_id]['path'], 0)
+        # If necessary, convert to grayscale
+        image = skimage.io.imread(self.image_info[image_id]['path'], as_gray=True)
+        a, b = image.shape
+        image = image.reshape(a, b, 1)
 
         return image
 
