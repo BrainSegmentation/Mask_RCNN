@@ -137,8 +137,8 @@ class BraintissueConfig(Config):
     RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
-    POST_NMS_ROIS_TRAINING = 200
-    POST_NMS_ROIS_INFERENCE = 200
+    POST_NMS_ROIS_TRAINING = 128
+    POST_NMS_ROIS_INFERENCE = 128
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more proposals.
@@ -165,7 +165,7 @@ class BraintissueConfig(Config):
     TRAIN_ROIS_PER_IMAGE = 128
 
     # Maximum number of ground truth instances to use in one image
-    MAX_GT_INSTANCES = 50
+    MAX_GT_INSTANCES = 100	
 
     # Max number of final detections per image
     DETECTION_MAX_INSTANCES = 50
