@@ -1,24 +1,27 @@
 import sys, os
+import glob
 from PIL import Image
 
-
+# Generates boxes which, together, partition the image into ~k**2 parts
 def getPartitionBoxes(img, k):
     img_width, img_height = img.size
     step_width, step_height = img_width // k, img_height // k
 
+    bounding_boxes = []
     for i in range(0, img_width, step_width):
         for j in range(0, img_height, step_height):
             box = (i, j, i + step_width, j + step_height)
-            yield img.crop(box)
+            bounding_boxes.append(box)
+    return bounding_boxes
 
-
+# Partitions an image
 def crop(in_path, k):
     img = Image.open(in_path)
     for box in getPartitionBoxes(img, k):
         yield img.crop(box)
 
 
-def cropToBox(in_path, box)
+def cropToBox(in_path, box):
     img = Image.open(in_path)
     return img.crop(box)
 
@@ -31,11 +34,11 @@ def mkdir(dir):
 
 
 # Takes partition (Image), path, section number, and file name
-def save_partition(img, out_path, i, name):
-    height, width = partitions[0].size
+def save_partition(img, out_path, name):
+    height, width = img.size
     img = Image.new('RGB', (height, width), 255)
-    img.paste(partitions[0])
-    curr_out_path = out_path + 'section-{}/'.format(i)
+    img.paste(img)
+    curr_out_path = out_path
     path = os.path.join(curr_out_path, name)
     mkdir(curr_out_path)
     img.save(path)
@@ -48,10 +51,10 @@ def main():
         print(usage)
         sys.exit()
     # Defaults 
-    in_path = './' + sys.argv[1]
-    mask_path = './' + sys.argv[2]
-    out_path = './partitions/'
-    k = 9
+    in_path = './' + sys.argv[1]    # wafer file location
+    mask_path = './' + sys.argv[2]  # mask files location
+    out_path = './partitions/'      # output directory path
+    k = 3                           # sqrt of # of partitions
     # User Input
     if len(sys.argv) == 4:
         out_path = sys.argv[3]
@@ -60,34 +63,38 @@ def main():
         k = int(sys.argv[4])
 
     # Get locations of all mask files
-    mask_paths = []
-    print('Making a ton of dirs...')
-    for file in os.listdir(mask_path):
-        filename = os.fsdecode(file)
-        if filename.endswith(".png") or filename.endswith(".bmp"):
-            mask_paths.append(os.path.join(mask_path, filename))
-        else:
-            continue
+    mask_paths = glob.glob(mask_path + '*.png')
+    mask_paths.extend(glob.glob(mask_path + '*.bmp'))
+    print('Found {} masks'.format(len(mask_paths)))
 
-    # Partition all images appropriately
-    # -- Get appropriate bounding boxes (each mask is identically sized, as is
-    # the original image)
+    # Generate cropping bounding boxes
     img = Image.open(in_path)
     bounding_boxes = getPartitionBoxes(img, k)
 
     # Crop all images according to each bounding box
     counter = 0
-    print('Partitioning Image(s)')
+    print('Partitioning Image(s) into {} parts'.format(len(bounding_boxes)))
     for i, box in enumerate(bounding_boxes):
+        sub_counter = 0;
+        # Make paths for current partition
+        section_str = 'section-{}'.format(i)
+        section_path = os.path.join(out_path, section_str)
+        images_path = os.path.join(section_path, 'images')
+        masks_path = os.path.join(section_path, 'masks')
+        name = section_str + '.png'
         wafer_sub = cropToBox(in_path, box)
-        name = 'wafer-sub-{}.png'.format(i)
-        save_partition(partitions[0], out_path, i, name)
+        save_partition(wafer_sub, images_path, name) # saves to images/
         counter += 1        
-        for mask in mask_paths:
-            sub = cropToBox(mask, box)
-            name = 'sub-{0}-{1}.png'.format(i, j)
-            save_partition(sub_img, out_path, i, name)
-            counter += 1 
+        sub_counter += 1
+        for j, mask in enumerate(mask_paths):
+            mask_sub = cropToBox(mask, box)
+            name = section_str + '-mask-{}.png'.format(j)
+            save_partition(mask_sub, masks_path, name)  # saves to masks/
+            counter += 1
+            sub_counter += 1
+             
+        print('Wrote {0} images to {1}'.format(sub_counter, section_path))
+        sub_counter = 0
 
     print('Saved {0} images to {1}'.format(counter, out_path))
 
