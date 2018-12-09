@@ -71,7 +71,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue/")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["section-21", "section-22"]
+VAL_IMAGE_IDS = ["section-21", "section-22", "section-47"]
 #     "0c2550a23b8a0f29a7575de8c61690d3c31bc897dd5ba66caec201d201a278c2",
 #     "92f31f591929a30e4309ab75185c96ff4314ce0a7ead2ed2c2171897ad1da0c7",
 #     "1e488c42eb1a54a3e8412b1f12cde530f950f238d71078f2ede6a85a02168e1f",
