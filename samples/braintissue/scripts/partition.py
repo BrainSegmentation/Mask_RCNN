@@ -35,12 +35,8 @@ def mkdir(dir):
 
 # Takes partition (Image), path, section number, and file name
 def save_partition(img, out_path, name):
-    height, width = img.size
-    img = Image.new('RGB', (height, width), 255)
-    img.paste(img)
-    curr_out_path = out_path
-    path = os.path.join(curr_out_path, name)
-    mkdir(curr_out_path)
+    path = os.path.join(out_path, name)
+    mkdir(out_path)
     img.save(path)
     
 
@@ -54,7 +50,7 @@ def main():
     in_path = './' + sys.argv[1]    # wafer file location
     mask_path = './' + sys.argv[2]  # mask files location
     out_path = './partitions/'      # output directory path
-    k = 3                           # sqrt of # of partitions
+    k = 1                           # sqrt of # of partitions
     # User Input
     if len(sys.argv) == 4:
         out_path = sys.argv[3]
@@ -81,14 +77,15 @@ def main():
         section_path = os.path.join(out_path, section_str)
         images_path = os.path.join(section_path, 'images')
         masks_path = os.path.join(section_path, 'masks')
+
         name = section_str + '.png'
         wafer_sub = cropToBox(in_path, box)
         save_partition(wafer_sub, images_path, name) # saves to images/
         counter += 1        
         sub_counter += 1
         for j, mask in enumerate(mask_paths):
-            mask_sub = cropToBox(mask, box)
             name = section_str + '-mask-{}.png'.format(j)
+            mask_sub = cropToBox(mask, box)
             save_partition(mask_sub, masks_path, name)  # saves to masks/
             counter += 1
             sub_counter += 1
