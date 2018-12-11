@@ -303,7 +303,7 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=2,
+                epochs=20,
                 #augmentation=augmentation,
                 layers='heads')
 
@@ -311,7 +311,7 @@ def train(model, dataset_dir, subset):
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=2,
+                epochs=40,
                 #augmentation=augmentation,
                 layers='all')
 
