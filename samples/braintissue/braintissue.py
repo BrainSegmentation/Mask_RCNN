@@ -107,7 +107,7 @@ class BraintissueConfig(Config):
     IMAGE_MIN_SCALE = 0
 
     # Length of square anchor side in pixels
-    RPN_ANCHOR_SCALES = [256] # (8, 16, 32, 64, 128)
+    RPN_ANCHOR_SCALES = (128, 256) # (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
     POST_NMS_ROIS_TRAINING = 128
@@ -284,7 +284,7 @@ def train(model, dataset_dir, subset):
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=40,
+                epochs=80,
                 #augmentation=augmentation,
                 layers='all')
 
