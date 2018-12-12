@@ -89,7 +89,7 @@ class BraintissueConfig(Config):
     NUM_CLASSES = 1 + 1  # Background + Braintissue
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (5 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    STEPS_PER_EPOCH = (35 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
     VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Don't exclude based on confidence. Since we have two classes
@@ -276,7 +276,7 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=20,
+                epochs=5,
                 #augmentation=augmentation,
                 layers='heads')
 
@@ -284,7 +284,7 @@ def train(model, dataset_dir, subset):
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=80,
+                epochs=20,
                 #augmentation=augmentation,
                 layers='all')
 
