@@ -46,8 +46,8 @@ def mkdir(dir):
 
 # Takes partition (Image), path, section number, and file name
 def save_partition(img, out_path, name):
-    copy = Image.new('RGB', (height,width), 255)
-    copy.paste(piece)         
+    copy = Image.new('RGB', img.size, 255)
+    copy.paste(img)         
     path = os.path.join(out_path, name)
     mkdir(out_path)
     copy.save(path)
