@@ -71,7 +71,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue/")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["section-21", "section-22", "section-47"]
+VAL_IMAGE_IDS = ["section-38", "section-85", "section-106"]
 
 ############################################################
 #  Configurations
@@ -89,7 +89,7 @@ class BraintissueConfig(Config):
     NUM_CLASSES = 1 + 1  # Background + Braintissue
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (35 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    STEPS_PER_EPOCH = (37 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
     VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Don't exclude based on confidence. Since we have two classes
@@ -138,7 +138,7 @@ class BraintissueConfig(Config):
     TRAIN_ROIS_PER_IMAGE = 128
 
     # Maximum number of ground truth instances to use in one image
-    MAX_GT_INSTANCES = 100	
+    MAX_GT_INSTANCES = 1000	
 
     # Max number of final detections per image
     DETECTION_MAX_INSTANCES = 50
@@ -273,18 +273,18 @@ def train(model, dataset_dir, subset):
     # If starting from imagenet, train heads only for a bit
     # since they have random weights
     print(time.strftime('%x %X'))
-    print("Train network heads")
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=5,
-                #augmentation=augmentation,
-                layers='heads')
+#    print("Train network heads")
+#    model.train(dataset_train, dataset_val,
+#                learning_rate=config.LEARNING_RATE,
+#                epochs=5,
+#                #augmentation=augmentation,
+#                layers='heads')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=20,
+                epochs=40,
                 #augmentation=augmentation,
                 layers='all')
 
