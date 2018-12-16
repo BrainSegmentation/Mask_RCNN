@@ -71,7 +71,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue/")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["section-38", "section-85", "section-106"]
+VAL_IMAGE_IDS = ["artif_0_crop1", "artif1_6_crop4", "artif1_2_crop8"]
 
 ############################################################
 #  Configurations
@@ -86,10 +86,10 @@ class BraintissueConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # Background + Braintissue
+    NUM_CLASSES = 1 + 1 + 1 # Background + Braintissue + magnetic part
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (37 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    STEPS_PER_EPOCH = (100 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
     VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Don't exclude based on confidence. Since we have two classes
@@ -141,7 +141,7 @@ class BraintissueConfig(Config):
     MAX_GT_INSTANCES = 1000	
 
     # Max number of final detections per image
-    DETECTION_MAX_INSTANCES = 50
+    DETECTION_MAX_INSTANCES = 100
 
     # Loss weights for more precise optimization.
     # Can be used for R-CNN training setup.
@@ -188,7 +188,8 @@ class BraintissueDataset(utils.Dataset):
         # "val": use hard-coded list above [UNAVAILABLE -Niklas ]
         # "train": use data from stage1_train minus the hard-coded list above
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "stage1_train", "stage1_test", "stage2_test"]
+        assert subset in ["train", "val", "stage1_train", "stage1_test", 
+        					"stage2_test", "train_artificial"]
         subset_dir = "train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
@@ -196,7 +197,7 @@ class BraintissueDataset(utils.Dataset):
         else:
             # Get image ids from directory names
             image_ids = next(os.walk(dataset_dir))[1]
-            if subset == "train":
+            if subset == "train" or "train_artificial":
                 image_ids = list(set(image_ids) - set(VAL_IMAGE_IDS))
 
         # Add images
@@ -204,7 +205,7 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
+                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
 
     def load_mask(self, image_id):
         """Generate instance masks for an image
@@ -215,19 +216,32 @@ class BraintissueDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         # Get mask directory from image path
-        mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "masks")
+        tissue_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "tissue_masks")
+        magnetic_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "magnetic_masks")
 
-        # Read mask files from .png image
-        mask = []
-        for f in next(os.walk(mask_dir))[2]:
-            if f.endswith(".png"):
-                m = skimage.io.imread(os.path.join(mask_dir, f), as_gray=True).astype(np.bool)
-                mask.append(m)
+        # Read mask files from .tif image
+        tissue_masks = []
+        magnetic_masks = []
+
+        # collect tissue part masks
+        for f in next(os.walk(tissue_mask_dir))[2]:
+            if f.endswith(".tif"):
+                m = skimage.io.imread(os.path.join(tissue_mask_dir, f), as_gray=True).astype(np.bool)
+                tissue_masks.append(m)
+        class_ids = np.zeros(len(tissue_masks), dtype=np.int32) + 1  # braintissue has id 1
+
+        # collect magnetic part masks
+        for f in next(os.walk(magnetic_mask_dir))[2]:
+            if f.endswith(".tif"):
+                m = skimage.io.imread(os.path.join(magnetic_mask_dir, f), as_gray=True).astype(np.bool)
+                magnetic_masks.append(m)
+        class_ids = np.r_[class_ids, np.zeros(len(magnetic_masks), dtype=np.int32) + 2]  # magnetic part has id 2
+
+        mask = tissue_masks + magnetic_masks
         mask = np.stack(mask, axis=-1)
 
-        # Return mask, and array of class IDs of each instance. Since we have
-        # one class ID, we return an array of ones
-        return mask, np.ones([mask.shape[-1]], dtype=np.int32)
+        # Return mask, and array of class IDs of each instance.
+        return mask, class_ids
 
     def load_image(self, image_id):
         """ Load an image as grayscale
