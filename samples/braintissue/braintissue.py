@@ -143,6 +143,16 @@ class BraintissueConfig(Config):
     # Max number of final detections per image
     DETECTION_MAX_INSTANCES = 50
 
+    # Loss weights for more precise optimization.
+    # Can be used for R-CNN training setup.
+    LOSS_WEIGHTS = {
+        "rpn_class_loss": 1.,
+        "rpn_bbox_loss": 2.,
+        "mrcnn_class_loss": 1.,
+        "mrcnn_bbox_loss": 1.,
+        "mrcnn_mask_loss": 2.
+    }
+
 
 class BraintissueInferenceConfig(BraintissueConfig):
     # Set batch size to 1 to run one image at a time
@@ -273,12 +283,12 @@ def train(model, dataset_dir, subset):
     # If starting from imagenet, train heads only for a bit
     # since they have random weights
     print(time.strftime('%x %X'))
-#    print("Train network heads")
-#    model.train(dataset_train, dataset_val,
-#                learning_rate=config.LEARNING_RATE,
-#                epochs=5,
-#                #augmentation=augmentation,
-#                layers='heads')
+    print("Train network heads")
+    model.train(dataset_train, dataset_val,
+               learning_rate=config.LEARNING_RATE,
+               epochs=5,
+               #augmentation=augmentation,
+               layers='heads')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
