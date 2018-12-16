@@ -183,6 +183,7 @@ class BraintissueDataset(utils.Dataset):
         # Add classes. We have one class.
         # Naming the dataset Braintissue, and the class Braintissue
         self.add_class("Braintissue", 1, "Braintissue")
+        self.add_class("Braintissue", 2, "Magnet")
 
         # Which subset?
         # "val": use hard-coded list above [UNAVAILABLE -Niklas ]
