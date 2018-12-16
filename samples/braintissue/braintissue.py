@@ -191,7 +191,7 @@ class BraintissueDataset(utils.Dataset):
         # else: use the data from the specified sub-directory
         assert subset in ["train", "val", "stage1_train", "stage1_test", 
         					"stage2_test", "train_artificial"]
-        subset_dir = "train" if subset in ["train", "val"] else subset
+        subset_dir = "train_artificial" if subset in ["train_artificial", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
             image_ids = VAL_IMAGE_IDS
