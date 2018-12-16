@@ -107,7 +107,7 @@ class BraintissueConfig(Config):
     IMAGE_MIN_SCALE = 0
 
     # Length of square anchor side in pixels
-    RPN_ANCHOR_SCALES = (32, 64, 128) # (8, 16, 32, 64, 128)
+    RPN_ANCHOR_SCALES = (32, 64, 128, 256) # (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
     POST_NMS_ROIS_TRAINING = 128
