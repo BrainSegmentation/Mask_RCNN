@@ -1,15 +1,12 @@
 """
 Mask R-CNN
-Train on the nuclei segmentation dataset from the
-Kaggle 2018 Data Science Bowl
-https://www.kaggle.com/c/data-science-bowl-2018/
 
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 
 
 Copied from Mask_RCNN/samples/nucleus/nucleus.py
-and modified for BrainSegmentation by Niklas Schmitz
+and modified for BrainSegmentation by @bgrassy @atikinf @niklasschmitz
 
 ------------------------------------------------------------
 
@@ -91,10 +88,6 @@ class BraintissueConfig(Config):
     # Number of training and validation steps per epoch
     STEPS_PER_EPOCH = (100 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
     VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
-
-    # Don't exclude based on confidence. Since we have two classes
-    # then 0.5 is the minimum anyway as it picks between Braintissue and BG
-    DETECTION_MIN_CONFIDENCE = 0
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
