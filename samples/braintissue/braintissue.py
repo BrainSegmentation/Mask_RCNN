@@ -144,7 +144,7 @@ class BraintissueDataset(utils.Dataset):
         return mask, class_ids
 
     def load_image(self, image_id):
-        """ Load a given image, as grayscale
+        """ Load a given image, convert to grayscale
         Returns:
         	image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
         """
@@ -153,6 +153,7 @@ class BraintissueDataset(utils.Dataset):
         path = info['path']
         
         image = skimage.io.imread(path, as_gray=True)
+        #image = skimage.color.gray2rgb(image)
         image = skimage.img_as_ubyte(image)
         a, b = image.shape
         image = image.reshape(a, b, 1)
@@ -212,13 +213,13 @@ def train(model, dataset_dir, subset):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE / 10.,
                 epochs=20,
-                augmentation=augmentation,
+                #augmentation=augmentation,
                 layers='all')
 
     print(time.strftime('%x %X'))
     print("Train network heads again")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE / 10.,
+                learning_rate=config.LEARNING_RATE  / 10.,
                 epochs=20,
                 augmentation=augmentation,
                 layers='heads')
@@ -328,6 +329,29 @@ def detect(model, dataset_dir, subset):
     with open(file_path, "w") as f:
         f.write(submission)
     print("Saved to ", submit_dir)
+
+############################################################
+#  Config saving
+############################################################
+
+def save_config(logs_path):
+    """ saves the braintissue config to the log dir, to have it next to the weights """
+
+    now = datetime.datetime.now()
+
+    # TODO: model.py 2335 possible conflict, if minute differs
+    log_dir = os.path.join(logs_path, 
+                            "{}{:%Y%m%dT%H%M}".format(config.NAME.lower(), now))
+
+    # Create log_dir if it does not exist
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    dest = os.path.join(log_dir, f"braintissue_config.py")
+
+    # Copy braintissue config to log dir
+    copyfile("braintissue_config.py", dest)
+
 
 ############################################################
 #  Command Line
