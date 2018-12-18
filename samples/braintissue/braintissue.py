@@ -208,20 +208,20 @@ def train(model, dataset_dir, subset):
                 #augmentation=augmentation,
                 layers='heads+conv1')
 
-    print(time.strftime('%x %X'))
-    print("Train all layers")
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE / 10.,
-                epochs=20,
-                #augmentation=augmentation,
-                layers='all')
+#    print(time.strftime('%x %X'))
+#    print("Train all layers")
+#    model.train(dataset_train, dataset_val,
+#                learning_rate=config.LEARNING_RATE / 10.,
+#                epochs=20,
+ #               #augmentation=augmentation,
+  #              layers='all')
 
     print(time.strftime('%x %X'))
     print("Train network heads again")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE  / 10.,
                 epochs=20,
-                augmentation=augmentation,
+                #augmentation=augmentation,
                 layers='heads')
 
 
