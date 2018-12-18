@@ -341,13 +341,13 @@ def save_config(logs_path):
 
     # TODO: model.py 2335 possible conflict, if minute differs
     log_dir = os.path.join(logs_path, 
-                            "{}{:%Y%m%dT%H%M}".format(config.NAME.lower(), now))
+                            "config_{}{:%Y%m%dT%H%M}".format(config.NAME.lower(), now))
 
     # Create log_dir if it does not exist
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    dest = os.path.join(log_dir, f"braintissue_config.py")
+    dest = os.path.join(log_dir, "braintissue_config.py")
 
     # Copy braintissue config to log dir
     copyfile("braintissue_config.py", dest)
