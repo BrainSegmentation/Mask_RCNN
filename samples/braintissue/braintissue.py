@@ -42,6 +42,7 @@ import json
 import datetime
 import time
 import numpy as np
+import skimage
 import skimage.io
 import pickle
 from imgaug import augmenters as iaa
@@ -66,7 +67,7 @@ from braintissue_config import *
 
 class BraintissueDataset(utils.Dataset):
 
-    def load_Braintissue(self, dataset_dir, subset):
+    def load_braintissue(self, dataset_dir, subset):
         """Load a subset of the nuclei dataset.
 
         dataset_dir: Root directory of the dataset
@@ -82,10 +83,10 @@ class BraintissueDataset(utils.Dataset):
 
         # Which subset?
         # "val": use hard-coded list above
-        # "train": use data from stage1_train minus the hard-coded list above
+        # "train": use data from train minus the hard-coded list above
+        # "train_artificial" : use data from train_artificial minus val
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "stage1_train", "stage1_test", 
-        					"stage2_test", "train_artificial"]
+        assert subset in ["train", "val", "train_artificial"]
         subset_dir = "train_artificial" if subset in ["train_artificial", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
@@ -101,7 +102,8 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
+                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id))
+            )
 
     def load_mask(self, image_id):
         """Generate instance masks for an image
@@ -124,28 +126,34 @@ class BraintissueDataset(utils.Dataset):
             if f.endswith(".tif"):
                 m = skimage.io.imread(os.path.join(tissue_mask_dir, f), as_gray=True).astype(np.bool)
                 tissue_masks.append(m)
-        class_ids = np.zeros(len(tissue_masks), dtype=np.int32) + 1  # braintissue has id 1
+        class_ids_tissue = np.zeros(len(tissue_masks), dtype=np.int32) + 1  # braintissue has id 1
 
         # collect magnetic part masks
         for f in next(os.walk(magnetic_mask_dir))[2]:
             if f.endswith(".tif"):
                 m = skimage.io.imread(os.path.join(magnetic_mask_dir, f), as_gray=True).astype(np.bool)
                 magnetic_masks.append(m)
-        class_ids = np.r_[class_ids, np.zeros(len(magnetic_masks), dtype=np.int32) + 2]  # magnetic part has id 2
+        class_ids_magnetic = np.zeros(len(magnetic_masks), dtype=np.int32) + 2  # magnetic part has id 2
 
+        # collect both
         mask = tissue_masks + magnetic_masks
         mask = np.stack(mask, axis=-1)
+        class_ids = np.r_[class_ids_tissue, class_ids_magnetic]
 
         # Return mask, and array of class IDs of each instance.
         return mask, class_ids
 
     def load_image(self, image_id):
-        """ Load an image as grayscale
+        """ Load a given image, as grayscale
         Returns:
-        	image: the loaded image as 2D array
+        	image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
         """
-        # If necessary, convert to grayscale
-        image = skimage.io.imread(self.image_info[image_id]['path'], as_gray=True)
+
+        info = self.image_info[image_id]
+        path = info['path']
+        
+        image = skimage.io.imread(path, as_gray=True)
+        image = skimage.img_as_ubyte(image)
         a, b = image.shape
         image = image.reshape(a, b, 1)
 
@@ -168,26 +176,25 @@ def train(model, dataset_dir, subset):
     """Train the model."""
     # Training dataset.
     dataset_train = BraintissueDataset()
-    dataset_train.load_Braintissue(dataset_dir, subset)
+    dataset_train.load_braintissue(dataset_dir, subset)
     dataset_train.prepare()
 
     # Validation dataset
     dataset_val = BraintissueDataset()
-    dataset_val.load_Braintissue(dataset_dir, "val")
+    dataset_val.load_braintissue(dataset_dir, "val")
     dataset_val.prepare()
 
     # Image augmentation
     # http://imgaug.readthedocs.io/en/latest/source/augmenters.html
-#    augmentation = iaa.SomeOf((0, 2), [
-#        iaa.Fliplr(0.5),
-#        iaa.Flipud(0.5),
-#        iaa.OneOf([iaa.Affine(rotate=90),
-#                   iaa.Affine(rotate=180),
-#                   iaa.Affine(rotate=270)]),
-#        iaa.Multiply((0.8, 1.5)),
-#        # iaa.GaussianBlur(sigma=(0.0, 5.0))
-#    ])
-#
+    augmentation = iaa.SomeOf((0, 2), [
+        iaa.Fliplr(0.5),
+        iaa.Flipud(0.5),
+        iaa.OneOf([iaa.Affine(rotate=90),
+                   iaa.Affine(rotate=180),
+                   iaa.Affine(rotate=270)]),
+        iaa.Multiply((0.9, 1.1)),
+    ])
+
     # *** This training schedule is an example. Update to your needs ***
 
     # If starting from imagenet, train heads only for a bit
@@ -195,18 +202,26 @@ def train(model, dataset_dir, subset):
     print(time.strftime('%x %X'))
     print("Train network heads")
     model.train(dataset_train, dataset_val,
-               learning_rate=config.LEARNING_RATE,
-               epochs=3,
-               #augmentation=augmentation,
-               layers='heads')
+                learning_rate=config.LEARNING_RATE,
+                epochs=10,
+                #augmentation=augmentation,
+                layers='heads+conv1')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=30,
-                #augmentation=augmentation,
+                learning_rate=config.LEARNING_RATE / 10.,
+                epochs=20,
+                augmentation=augmentation,
                 layers='all')
+
+    print(time.strftime('%x %X'))
+    print("Train network heads again")
+    model.train(dataset_train, dataset_val,
+                learning_rate=config.LEARNING_RATE / 10.,
+                epochs=20,
+                augmentation=augmentation,
+                layers='heads')
 
 
 ############################################################
@@ -286,7 +301,7 @@ def detect(model, dataset_dir, subset):
 
     # Read dataset
     dataset = BraintissueDataset()
-    dataset.load_Braintissue(dataset_dir, subset)
+    dataset.load_braintissue(dataset_dir, subset)
     dataset.prepare()
     # Load over images
     submission = []
@@ -313,29 +328,6 @@ def detect(model, dataset_dir, subset):
     with open(file_path, "w") as f:
         f.write(submission)
     print("Saved to ", submit_dir)
-
-############################################################
-#  Config saving
-############################################################
-
-def save_config(logs_path):
-    """ saves the braintissue config to the log dir, to have it next to the weights """
-
-    now = datetime.datetime.now()
-
-    # TODO: model.py 2335 possible conflict, if minute differs
-    log_dir = os.path.join(logs_path, 
-                            "{}{:%Y%m%dT%H%M}".format(config.NAME.lower(), now))
-
-    # Create log_dir if it does not exist
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    dest = os.path.join(log_dir, f"braintissue_config.py")
-
-    # Copy braintissue config to log dir
-    copyfile("braintissue_config.py", dest)
-
 
 ############################################################
 #  Command Line

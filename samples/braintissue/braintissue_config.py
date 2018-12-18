@@ -21,7 +21,7 @@ sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
 
 # Path to trained coco weights file
-COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "weights/mask_rcnn_coco.h5")
+COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
@@ -51,7 +51,7 @@ class BraintissueConfig(Config):
     NUM_CLASSES = 1 + 1 + 1 # Background + Braintissue + magnetic part
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (100 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    STEPS_PER_EPOCH = (200 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
     VALIDATION_STEPS = 3 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Backbone network architecture
@@ -65,7 +65,7 @@ class BraintissueConfig(Config):
     IMAGE_MIN_SCALE = 0
 
     # Length of square anchor side in pixels
-    RPN_ANCHOR_SCALES = (32, 64, 128, 256) # (8, 16, 32, 64, 128)
+    RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
     POST_NMS_ROIS_TRAINING = 128
@@ -78,7 +78,6 @@ class BraintissueConfig(Config):
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 64
 
-    # Grayscale adjustments
     IMAGE_CHANNEL_COUNT = 1
     MEAN_PIXEL = np.array([184])
     
