@@ -436,12 +436,4 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'detect'".format(args.command))
-"""
-Mask R-CNN
 
-Licensed under the MIT License (see LICENSE for details)
-Written by Waleed Abdulla
-
-
-Copied from Mask_RCNN/samples/nucleus/nucleus.py
-and modified for BrainSegmentation by @bgrassy @atikinf @niklasschmitz
