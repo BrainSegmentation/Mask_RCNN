@@ -76,7 +76,7 @@ class BraintissueConfig(Config):
     RPN_NMS_THRESHOLD = 0.9
 
     # How many anchors per image to use for RPN training
-    RPN_TRAIN_ANCHORS_PER_IMAGE = 64
+    RPN_TRAIN_ANCHORS_PER_IMAGE = 128
 
     IMAGE_CHANNEL_COUNT = 1
     MEAN_PIXEL = np.array([184])
