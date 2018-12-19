@@ -205,25 +205,16 @@ def train(model, dataset_dir, subset):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=10,
-                #augmentation=augmentation,
+                augmentation=augmentation,
                 layers='heads+conv1')
 
-#    print(time.strftime('%x %X'))
-#    print("Train all layers")
-#    model.train(dataset_train, dataset_val,
-#                learning_rate=config.LEARNING_RATE / 10.,
-#                epochs=20,
- #               #augmentation=augmentation,
-  #              layers='all')
-
     print(time.strftime('%x %X'))
-    print("Train network heads again")
+    print("Train all layers")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE  / 10.,
-                epochs=20,
+                learning_rate=config.LEARNING_RATE / 10.,
+                epochs=60,
                 #augmentation=augmentation,
-                layers='heads')
-
+                layers='all')
 
 ############################################################
 #  RLE Encoding
