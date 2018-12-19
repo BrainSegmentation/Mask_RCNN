@@ -77,19 +77,19 @@ def main():
 
     parser = argparse.ArgumentParser(description='Image partitioner')
 
-    parser.add_argument('image',
-                        metavar='/path/to/image/')
-    parser.add_argument('masks',
-                        metavar='/path/to/masks/')
-    parser.add-argument('--out', required=False,
+    # Optional
+    parser.add_argument('--out', required=False,
                         default='./partitions/',
-                        metavar='output directory')
-    parser.add-argument('--size', required=False,
+                        metavar='OUTPUT DIR')
+    parser.add_argument('--size', required=False, type=int,
                         default=512,
-                        metavar='partitioned tile size (px)')
-    parser.add_argument('--overlap', required=False,
+                        metavar='OUTPUT SIZE px')
+    parser.add_argument('--overlap', required=False, type=int,
                         default=0,
-                        metavar='partition overlap size (px)')
+                        metavar='OVERLAP px')
+    # Positional
+    parser.add_argument('image', metavar='/path/to/image/')
+    parser.add_argument('masks', metavar='/path/to/masks/')
     args = parser.parse_args()
 
     image_path = args.image
@@ -98,14 +98,21 @@ def main():
     out_path = args.out
     size = args.size
     overlap = args.overlap
-
+    
     # Hard Coded (but unused)
     k = 9                           # sqrt of # of partitions
+
+    print('...................................................')
+    print("Partition size: " + str(size))
+    print("Partition overlap: " + str(overlap) + '\n') 
+
+    print('Outputting to ' + out_path)
 
     # Get locations of all mask files
     mask_paths = glob.glob(mask_path + '*.png')
     mask_paths.extend(glob.glob(mask_path + '*.bmp'))
     print('Found {} masks'.format(len(mask_paths)))
+    print('...................................................')
 
     # Generate cropping bounding boxes
     img = Image.open(image_path)
@@ -113,7 +120,7 @@ def main():
 
     # Crop all images according to each bounding box
     counter = 0
-    print('Partitioning Image(s) into {} parts'.format(len(bounding_boxes)))
+    print('Partitioning Image(s) into <={} parts...'.format(len(bounding_boxes)))
     for i, box in enumerate(bounding_boxes):
         sub_counter = 0;
         # Make paths for current partition
