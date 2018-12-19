@@ -213,7 +213,7 @@ def train(model, dataset_dir, subset):
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE / 10.,
                 epochs=60,
-                #augmentation=augmentation,
+                augmentation=augmentation,
                 layers='all')
 
 ############################################################
@@ -436,3 +436,12 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'detect'".format(args.command))
+"""
+Mask R-CNN
+
+Licensed under the MIT License (see LICENSE for details)
+Written by Waleed Abdulla
+
+
+Copied from Mask_RCNN/samples/nucleus/nucleus.py
+and modified for BrainSegmentation by @bgrassy @atikinf @niklasschmitz
