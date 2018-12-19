@@ -33,7 +33,7 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["artif1_0_crop1", "artif1_6_crop4", "artif1_2_crop8"]
+VAL_IMAGE_IDS = ["artif1_6_crop4", "artif1_2_crop8"]
 
 ############################################################
 #  Configurations
