@@ -140,8 +140,6 @@ def main():
                 cumulative = Image.new('1', mask_sub.size)
             cumulative = ImageChops.lighter(cumulative, mask_sub)
         
-        print(cumulative.getcolors())
-        cumulative.save("test{}.png".format(i))
         if is_dense(cumulative):
             for image in save_buffer:
                 save_partition(image[0], masks_path, image[1])  # saves to masks/
