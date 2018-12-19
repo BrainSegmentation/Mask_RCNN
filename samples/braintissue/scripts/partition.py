@@ -24,16 +24,27 @@ def get_partition_boxes_size(img, size):
             bounding_boxes.append(box)
     return bounding_boxes
 
+def get_overlapping_boxes_size(img, size, overlap):
+    if overlap > size:
+        exit
+    width, height = img.size
+
+    bounding_boxes = []
+    for i in range(0, width, size - overlap):
+        for j in range(0, height, size - overlap):
+            box = (i, j, i + size, j + size)
+            bounding_boxex.append(box)
+    return bounding_boxes
 
 # Partitions an image
-def crop(in_path, k):
-    img = Image.open(in_path)
+def crop(image_path, k):
+    img = Image.open(image_path)
     for box in get_partition_boxes(img, k):
         yield img.crop(box)
 
 
-def cropToBox(in_path, box):
-    img = Image.open(in_path)
+def cropToBox(image_path, box):
+    img = Image.open(image_path)
     return img.crop(box)
 
 
@@ -61,26 +72,35 @@ def is_dense(img):
         return True
 
 
-# Takes in_path, out_path, k (num of partitions is k**2)
 def main():
-    usage = 'Usage: partition.py <in_path> <mask_path> <out_path> <k>, out and k optional'
-    if len(sys.argv) > 4 or len(sys.argv) < 2:
-        print(usage)
-        sys.exit()
-    # Defaults 
-    in_path = './' + sys.argv[1]    # wafer file location
-    mask_path = './' + sys.argv[2]  # mask files location
-    out_path = './partitions/'      # output directory path
-    k = 9                           # sqrt of # of partitions
-    # User Input
-    if len(sys.argv) == 4:
-        out_path = sys.argv[3]
-    if len(sys.argv) == 5:
-        out_path = sys.argv[3]
-        k = int(sys.argv[4])
+    import argparse
 
-    # Hard Coded
-    size = 512
+    parser = argparse.ArgumentParser(description='Image partitioner')
+
+    parser.add_argument('image',
+                        metavar='/path/to/image/')
+    parser.add_argument('masks',
+                        metavar='/path/to/masks/')
+    parser.add-argument('--out', required=False,
+                        default='./partitions/',
+                        metavar='output directory')
+    parser.add-argument('--size', required=False,
+                        default=512,
+                        metavar='partitioned tile size (px)')
+    parser.add_argument('--overlap', required=False,
+                        default=0,
+                        metavar='partition overlap size (px)')
+    args = parser.parse_args()
+
+    image_path = args.image
+    mask_path = args.masks
+
+    out_path = args.out
+    size = args.size
+    overlap = args.overlap
+
+    # Hard Coded (but unused)
+    k = 9                           # sqrt of # of partitions
 
     # Get locations of all mask files
     mask_paths = glob.glob(mask_path + '*.png')
@@ -88,7 +108,7 @@ def main():
     print('Found {} masks'.format(len(mask_paths)))
 
     # Generate cropping bounding boxes
-    img = Image.open(in_path)
+    img = Image.open(image_path)
     bounding_boxes = get_partition_boxes_size(img, size)
 
     # Crop all images according to each bounding box
@@ -121,7 +141,7 @@ def main():
                 counter += 1
                 sub_counter += 1
             name = section_str + '.png'
-            wafer_sub = cropToBox(in_path, box)
+            wafer_sub = cropToBox(image_path, box)
             save_partition(wafer_sub, images_path, name) # saves to images/
             counter += 1        
             sub_counter += 1
