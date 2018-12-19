@@ -1,15 +1,12 @@
 """
 Mask R-CNN
-Train on the nuclei segmentation dataset from the
-Kaggle 2018 Data Science Bowl
-https://www.kaggle.com/c/data-science-bowl-2018/
 
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 
 
 Copied from Mask_RCNN/samples/nucleus/nucleus.py
-and modified for BrainSegmentation by Niklas Schmitz
+and modified for BrainSegmentation by @bgrassy @atikinf @niklasschmitz
 
 ------------------------------------------------------------
 
@@ -45,8 +42,12 @@ import json
 import datetime
 import time
 import numpy as np
+import skimage
 import skimage.io
+import pickle
 from imgaug import augmenters as iaa
+from shutil import copyfile
+import re
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -58,112 +59,7 @@ from mrcnn import utils
 from mrcnn import model as modellib
 from mrcnn import visualize
 
-# Path to trained weights file
-COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "weights/mask_rcnn_coco.h5")
-
-# Directory to save logs and model checkpoints, if not provided
-# through the command line argument --logs
-DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
-
-# Results directory
-# Save submission files here
-RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue/")
-
-# The dataset doesn't have a standard train/val split, so I picked
-# a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["artif1_0_crop1", "artif1_6_crop4", "artif1_2_crop8"]
-
-############################################################
-#  Configurations
-############################################################
-
-class BraintissueConfig(Config):
-    """Configuration for training on the Braintissue segmentation dataset."""
-    # Give the configuration a recognizable name
-    NAME = "Braintissue"
-
-    # Adjust depending on your GPU memory
-    IMAGES_PER_GPU = 1
-
-    # Number of classes (including background)
-    NUM_CLASSES = 1 + 1 + 1 # Background + Braintissue + magnetic part
-
-    # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (100 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
-    VALIDATION_STEPS = 1 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
-
-    # Don't exclude based on confidence. Since we have two classes
-    # then 0.5 is the minimum anyway as it picks between Braintissue and BG
-    DETECTION_MIN_CONFIDENCE = 0
-
-    # Backbone network architecture
-    # Supported values are: resnet50, resnet101
-    BACKBONE = "resnet50"
-
-    # Input image resizing
-    IMAGE_RESIZE_MODE = "square"
-    IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
-    IMAGE_MIN_SCALE = 0
-
-    # Length of square anchor side in pixels
-    RPN_ANCHOR_SCALES = (32, 64, 128, 256) # (8, 16, 32, 64, 128)
-
-    # ROIs kept after non-maximum supression (training and inference)
-    POST_NMS_ROIS_TRAINING = 128
-    POST_NMS_ROIS_INFERENCE = 128
-
-    # Non-max suppression threshold to filter RPN proposals.
-    # You can increase this during training to generate more proposals.
-    RPN_NMS_THRESHOLD = 0.9
-
-    # How many anchors per image to use for RPN training
-    RPN_TRAIN_ANCHORS_PER_IMAGE = 64
-
-    # Grayscale adjustments
-    IMAGE_CHANNEL_COUNT = 1
-    MEAN_PIXEL = np.array([184])
-    
-
-    # If enabled, resizes instance masks to a smaller size to reduce
-    # memory load. Recommended when using high-resolution images.
-    USE_MINI_MASK = True
-    MINI_MASK_SHAPE = (56, 56)  # (height, width) of the mini-mask
-
-    # Number of ROIs per image to feed to classifier/mask heads
-    # The Mask RCNN paper uses 512 but often the RPN doesn't generate
-    # enough positive proposals to fill this and keep a positive:negative
-    # ratio of 1:3. You can increase the number of proposals by adjusting
-    # the RPN NMS threshold.
-    TRAIN_ROIS_PER_IMAGE = 128
-
-    # Maximum number of ground truth instances to use in one image
-    MAX_GT_INSTANCES = 1000	
-
-    # Max number of final detections per image
-    DETECTION_MAX_INSTANCES = 100
-
-    # Loss weights for more precise optimization.
-    # Can be used for R-CNN training setup.
-    LOSS_WEIGHTS = {
-        "rpn_class_loss": 1.,
-        "rpn_bbox_loss": 2.,
-        "mrcnn_class_loss": 1.,
-        "mrcnn_bbox_loss": 1.,
-        "mrcnn_mask_loss": 2.
-    }
-
-
-class BraintissueInferenceConfig(BraintissueConfig):
-    # Set batch size to 1 to run one image at a time
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    # Don't resize imager for inferencing
-    IMAGE_RESIZE_MODE = "square"
-    # Non-max suppression threshold to filter RPN proposals.
-    # You can increase this during training to generate more proposals.
-    RPN_NMS_THRESHOLD = 0.7
-
+from braintissue_config import *
 
 ############################################################
 #  Dataset
@@ -171,7 +67,7 @@ class BraintissueInferenceConfig(BraintissueConfig):
 
 class BraintissueDataset(utils.Dataset):
 
-    def load_Braintissue(self, dataset_dir, subset):
+    def load_braintissue(self, dataset_dir, subset):
         """Load a subset of the nuclei dataset.
 
         dataset_dir: Root directory of the dataset
@@ -180,17 +76,17 @@ class BraintissueDataset(utils.Dataset):
                 * train: stage1_train excluding validation images
                 * val: validation images from VAL_IMAGE_IDS
         """
-        # Add classes. We have one class.
+        # Add classes. We have two classes: magnetic part and braintissue part
         # Naming the dataset Braintissue, and the class Braintissue
         self.add_class("Braintissue", 1, "Braintissue")
         self.add_class("Braintissue", 2, "Magnet")
 
         # Which subset?
-        # "val": use hard-coded list above [UNAVAILABLE -Niklas ]
-        # "train": use data from stage1_train minus the hard-coded list above
+        # "val": use hard-coded list above
+        # "train": use data from train minus the hard-coded list above
+        # "train_artificial" : use data from train_artificial minus val
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "stage1_train", "stage1_test", 
-        					"stage2_test", "train_artificial"]
+        assert subset in ["train", "val", "train_artificial"]
         subset_dir = "train_artificial" if subset in ["train_artificial", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
@@ -206,7 +102,8 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id)))
+                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id))
+            )
 
     def load_mask(self, image_id):
         """Generate instance masks for an image
@@ -229,28 +126,35 @@ class BraintissueDataset(utils.Dataset):
             if f.endswith(".tif"):
                 m = skimage.io.imread(os.path.join(tissue_mask_dir, f), as_gray=True).astype(np.bool)
                 tissue_masks.append(m)
-        class_ids = np.zeros(len(tissue_masks), dtype=np.int32) + 1  # braintissue has id 1
+        class_ids_tissue = np.zeros(len(tissue_masks), dtype=np.int32) + 1  # braintissue has id 1
 
         # collect magnetic part masks
         for f in next(os.walk(magnetic_mask_dir))[2]:
             if f.endswith(".tif"):
                 m = skimage.io.imread(os.path.join(magnetic_mask_dir, f), as_gray=True).astype(np.bool)
                 magnetic_masks.append(m)
-        class_ids = np.r_[class_ids, np.zeros(len(magnetic_masks), dtype=np.int32) + 2]  # magnetic part has id 2
+        class_ids_magnetic = np.zeros(len(magnetic_masks), dtype=np.int32) + 2  # magnetic part has id 2
 
+        # collect both
         mask = tissue_masks + magnetic_masks
         mask = np.stack(mask, axis=-1)
+        class_ids = np.r_[class_ids_tissue, class_ids_magnetic]
 
         # Return mask, and array of class IDs of each instance.
         return mask, class_ids
 
     def load_image(self, image_id):
-        """ Load an image as grayscale
+        """ Load a given image, convert to grayscale
         Returns:
-        	image: the loaded image as 2D array
+        	image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
         """
-        # If necessary, convert to grayscale
-        image = skimage.io.imread(self.image_info[image_id]['path'], as_gray=True)
+
+        info = self.image_info[image_id]
+        path = info['path']
+        
+        image = skimage.io.imread(path, as_gray=True)
+        #image = skimage.color.gray2rgb(image)
+        image = skimage.img_as_ubyte(image)
         a, b = image.shape
         image = image.reshape(a, b, 1)
 
@@ -273,26 +177,25 @@ def train(model, dataset_dir, subset):
     """Train the model."""
     # Training dataset.
     dataset_train = BraintissueDataset()
-    dataset_train.load_Braintissue(dataset_dir, subset)
+    dataset_train.load_braintissue(dataset_dir, subset)
     dataset_train.prepare()
 
     # Validation dataset
     dataset_val = BraintissueDataset()
-    dataset_val.load_Braintissue(dataset_dir, "val")
+    dataset_val.load_braintissue(dataset_dir, "val")
     dataset_val.prepare()
 
     # Image augmentation
     # http://imgaug.readthedocs.io/en/latest/source/augmenters.html
-#    augmentation = iaa.SomeOf((0, 2), [
-#        iaa.Fliplr(0.5),
-#        iaa.Flipud(0.5),
-#        iaa.OneOf([iaa.Affine(rotate=90),
-#                   iaa.Affine(rotate=180),
-#                   iaa.Affine(rotate=270)]),
-#        iaa.Multiply((0.8, 1.5)),
-#        # iaa.GaussianBlur(sigma=(0.0, 5.0))
-#    ])
-#
+    augmentation = iaa.SomeOf((0, 2), [
+        iaa.Fliplr(0.5),
+        iaa.Flipud(0.5),
+        iaa.OneOf([iaa.Affine(rotate=90),
+                   iaa.Affine(rotate=180),
+                   iaa.Affine(rotate=270)]),
+        iaa.Multiply((0.9, 1.1)),
+    ])
+
     # *** This training schedule is an example. Update to your needs ***
 
     # If starting from imagenet, train heads only for a bit
@@ -300,19 +203,18 @@ def train(model, dataset_dir, subset):
     print(time.strftime('%x %X'))
     print("Train network heads")
     model.train(dataset_train, dataset_val,
-               learning_rate=config.LEARNING_RATE,
-               epochs=3,
-               #augmentation=augmentation,
-               layers='heads')
+                learning_rate=config.LEARNING_RATE,
+                epochs=10,
+                augmentation=augmentation,
+                layers='heads+conv1')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=30,
-                #augmentation=augmentation,
+                learning_rate=config.LEARNING_RATE / 10.,
+                epochs=60,
+                augmentation=augmentation,
                 layers='all')
-
 
 ############################################################
 #  RLE Encoding
@@ -391,7 +293,7 @@ def detect(model, dataset_dir, subset):
 
     # Read dataset
     dataset = BraintissueDataset()
-    dataset.load_Braintissue(dataset_dir, subset)
+    dataset.load_braintissue(dataset_dir, subset)
     dataset.prepare()
     # Load over images
     submission = []
@@ -419,6 +321,28 @@ def detect(model, dataset_dir, subset):
         f.write(submission)
     print("Saved to ", submit_dir)
 
+############################################################
+#  Config saving
+############################################################
+
+def save_config(logs_path):
+    """ saves the braintissue config to the log dir, to have it next to the weights """
+
+    now = datetime.datetime.now()
+
+    # TODO: model.py 2335 possible conflict, if minute differs
+    log_dir = os.path.join(logs_path, 
+                            "config_{}{:%Y%m%dT%H%M}".format(config.NAME.lower(), now))
+
+    # Create log_dir if it does not exist
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    dest = os.path.join(log_dir, "braintissue_config.py")
+
+    # Copy braintissue config to log dir
+    copyfile("braintissue_config.py", dest)
+
 
 ############################################################
 #  Command Line
@@ -429,7 +353,7 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description='Mask R-CNN for nuclei counting and segmentation')
+        description='Mask R-CNN for braintissue wafer segmentation')
     parser.add_argument("command",
                         metavar="<command>",
                         help="'train' or 'detect'")
@@ -463,6 +387,9 @@ if __name__ == '__main__':
     # Configurations
     if args.command == "train":
         config = BraintissueConfig()
+
+        # Copy the used config file to the log dir for reproducibility after training
+        save_config(args.logs)
     else:
         config = BraintissueInferenceConfig()
     config.display()
@@ -509,3 +436,4 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'detect'".format(args.command))
+
