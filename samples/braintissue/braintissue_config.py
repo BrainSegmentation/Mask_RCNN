@@ -33,7 +33,10 @@ RESULTS_DIR = os.path.join(ROOT_DIR, "results/braintissue")
 
 # The dataset doesn't have a standard train/val split, so I picked
 # a variety of images to serve as a validation set.
-VAL_IMAGE_IDS = ["artif1_6_crop4", "artif1_2_crop8"]
+VAL_IMAGE_IDS = [
+	"patch_0000", "patch_0027", "patch_0018",
+	"patch_0034", "patch_0051", "patch_0086"
+]
 
 ############################################################
 #  Configurations
@@ -51,8 +54,8 @@ class BraintissueConfig(Config):
     NUM_CLASSES = 1 + 1 + 1 # Background + Braintissue + magnetic part
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (200 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
-    VALIDATION_STEPS = 3 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
+    STEPS_PER_EPOCH = (400 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
+    VALIDATION_STEPS = 6 # max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
@@ -68,8 +71,8 @@ class BraintissueConfig(Config):
     RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256) # (8, 16, 32, 64, 128)
 
     # ROIs kept after non-maximum supression (training and inference)
-    POST_NMS_ROIS_TRAINING = 128
-    POST_NMS_ROIS_INFERENCE = 128
+    POST_NMS_ROIS_TRAINING = 512
+    POST_NMS_ROIS_INFERENCE = 1024
 
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more proposals.
@@ -78,8 +81,8 @@ class BraintissueConfig(Config):
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 128
 
-    IMAGE_CHANNEL_COUNT = 1
-    MEAN_PIXEL = np.array([184])
+    IMAGE_CHANNEL_COUNT = 2
+    MEAN_PIXEL = np.array([151, 12])
     
 
     # If enabled, resizes instance masks to a smaller size to reduce
@@ -98,17 +101,7 @@ class BraintissueConfig(Config):
     MAX_GT_INSTANCES = 1000	
 
     # Max number of final detections per image
-    DETECTION_MAX_INSTANCES = 100
-
-    # Loss weights for more precise optimization.
-    # Can be used for R-CNN training setup.
-    LOSS_WEIGHTS = {
-        "rpn_class_loss": 1.,
-        "rpn_bbox_loss": 2.,
-        "mrcnn_class_loss": 1.,
-        "mrcnn_bbox_loss": 1.,
-        "mrcnn_mask_loss": 2.
-    }
+    DETECTION_MAX_INSTANCES = 200
 
 
 class BraintissueInferenceConfig(BraintissueConfig):
@@ -116,7 +109,7 @@ class BraintissueInferenceConfig(BraintissueConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # Don't resize imager for inferencing
-    IMAGE_RESIZE_MODE = "square"
+    IMAGE_RESIZE_MODE = "pad64"
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more proposals.
     RPN_NMS_THRESHOLD = 0.7

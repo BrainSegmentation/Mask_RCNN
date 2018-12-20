@@ -86,15 +86,15 @@ class BraintissueDataset(utils.Dataset):
         # "train": use data from train minus the hard-coded list above
         # "train_artificial" : use data from train_artificial minus val
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "train_artificial"]
-        subset_dir = "train_artificial" if subset in ["train_artificial", "val"] else subset
+        assert subset in ["train", "val", "train_artificial", "partitions"]
+        subset_dir = "train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
             image_ids = VAL_IMAGE_IDS
         else:
             # Get image ids from directory names
             image_ids = next(os.walk(dataset_dir))[1]
-            if subset == "train" or "train_artificial":
+            if subset == "train" or "train_artificial" or "partitions":
                 image_ids = list(set(image_ids) - set(VAL_IMAGE_IDS))
 
         # Add images
@@ -102,7 +102,7 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id))
+                path=os.path.join(dataset_dir, image_id, "images")
             )
 
     def load_mask(self, image_id):
@@ -114,8 +114,8 @@ class BraintissueDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         # Get mask directory from image path
-        tissue_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "tissue_masks")
-        magnetic_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "magnetic_masks")
+        tissue_mask_dir = os.path.join(os.path.dirname(info['path']), "tissue_masks")
+        magnetic_mask_dir = os.path.join(os.path.dirname(info['path']), "magnetic_masks")
 
         # Read mask files from .tif image
         tissue_masks = []
@@ -144,19 +144,28 @@ class BraintissueDataset(utils.Dataset):
         return mask, class_ids
 
     def load_image(self, image_id):
-        """ Load a given image, convert to grayscale
+        """ Load a given image, convert to grayscale, add fluo channel
         Returns:
-        	image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
+            image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
         """
 
         info = self.image_info[image_id]
+
+        # this is the path to the images/ folder containing both channels as seperate images
         path = info['path']
+
+        path_base_channel = os.path.join(path, "{}.tif".format(info["id"]))
+        path_fluo_channel = os.path.join(path, "{}_fluo.tif".format(info["id"]))
         
-        image = skimage.io.imread(path, as_gray=True)
-        #image = skimage.color.gray2rgb(image)
-        image = skimage.img_as_ubyte(image)
-        a, b = image.shape
-        image = image.reshape(a, b, 1)
+        base_channel = skimage.io.imread(path_base_channel, as_gray=True)
+        base_channel = skimage.img_as_ubyte(base_channel)
+
+        fluo_channel = skimage.io.imread(path_fluo_channel, as_gray=True)
+        fluo_channel = skimage.img_as_ubyte(fluo_channel)
+
+        # stack both channels together
+        image = [base_channel, fluo_channel]
+        image = np.stack(image, axis=-1)
 
         return image
 
@@ -193,7 +202,7 @@ def train(model, dataset_dir, subset):
         iaa.OneOf([iaa.Affine(rotate=90),
                    iaa.Affine(rotate=180),
                    iaa.Affine(rotate=270)]),
-        iaa.Multiply((0.9, 1.1)),
+        #iaa.Multiply((0.9, 1.1)),
     ])
 
     # *** This training schedule is an example. Update to your needs ***
@@ -204,15 +213,15 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=10,
+                epochs=2,
                 augmentation=augmentation,
                 layers='heads+conv1')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE / 10.,
-                epochs=60,
+                learning_rate=config.LEARNING_RATE,
+                epochs=80,
                 augmentation=augmentation,
                 layers='all')
 
