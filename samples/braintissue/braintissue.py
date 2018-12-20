@@ -86,15 +86,15 @@ class BraintissueDataset(utils.Dataset):
         # "train": use data from train minus the hard-coded list above
         # "train_artificial" : use data from train_artificial minus val
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "train_artificial"]
-        subset_dir = "train_artificial" if subset in ["train_artificial", "val"] else subset
+        assert subset in ["train", "val", "train_artificial", "partitions"]
+        subset_dir = "partitions" if subset in ["partitions", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
             image_ids = VAL_IMAGE_IDS
         else:
             # Get image ids from directory names
             image_ids = next(os.walk(dataset_dir))[1]
-            if subset == "train" or "train_artificial":
+            if subset == "train" or "train_artificial" or "partitions":
                 image_ids = list(set(image_ids) - set(VAL_IMAGE_IDS))
 
         # Add images
