@@ -202,7 +202,7 @@ def train(model, dataset_dir, subset):
         iaa.OneOf([iaa.Affine(rotate=90),
                    iaa.Affine(rotate=180),
                    iaa.Affine(rotate=270)]),
-        iaa.Multiply((0.9, 1.1)),
+        #iaa.Multiply((0.9, 1.1)),
     ])
 
     # *** This training schedule is an example. Update to your needs ***
@@ -221,7 +221,7 @@ def train(model, dataset_dir, subset):
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE / 10.,
-                epochs=60,
+                epochs=80,
                 augmentation=augmentation,
                 layers='all')
 
