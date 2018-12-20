@@ -87,7 +87,7 @@ class BraintissueDataset(utils.Dataset):
         # "train_artificial" : use data from train_artificial minus val
         # else: use the data from the specified sub-directory
         assert subset in ["train", "val", "train_artificial", "partitions"]
-        subset_dir = "partitions" if subset in ["partitions", "val"] else subset
+        subset_dir = "train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
             image_ids = VAL_IMAGE_IDS
@@ -155,7 +155,7 @@ class BraintissueDataset(utils.Dataset):
         path = info['path']
 
         path_base_channel = os.path.join(path, "{}.tif".format(info["id"]))
-        path_fluo_channel = os.path.join(path, "fluo_{}.tif".format(info["id"]))
+        path_fluo_channel = os.path.join(path, "{}_fluo.tif".format(info["id"]))
         
         base_channel = skimage.io.imread(path_base_channel, as_gray=True)
         base_channel = skimage.img_as_ubyte(base_channel)
@@ -213,14 +213,14 @@ def train(model, dataset_dir, subset):
     print("Train network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=10,
+                epochs=2,
                 augmentation=augmentation,
                 layers='heads+conv1')
 
     print(time.strftime('%x %X'))
     print("Train all layers")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE / 10.,
+                learning_rate=config.LEARNING_RATE,
                 epochs=80,
                 augmentation=augmentation,
                 layers='all')
