@@ -18,6 +18,8 @@ and
 
 (20 epochs single channel grayscale)[https://drive.google.com/open?id=1Vhp9MpP2z26TJ6wKyUutPA74UcJTKrXK]
 
+with these you can explore our model in [this notebook](run.ipynb)
+
 Below: the original repo README
 # Mask R-CNN for Object Detection and Segmentation
 
