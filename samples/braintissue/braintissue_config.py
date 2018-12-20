@@ -78,8 +78,8 @@ class BraintissueConfig(Config):
     # How many anchors per image to use for RPN training
     RPN_TRAIN_ANCHORS_PER_IMAGE = 128
 
-    IMAGE_CHANNEL_COUNT = 1
-    MEAN_PIXEL = np.array([184])
+    IMAGE_CHANNEL_COUNT = 2
+    MEAN_PIXEL = np.array([184, 15])
     
 
     # If enabled, resizes instance masks to a smaller size to reduce

@@ -102,7 +102,7 @@ class BraintissueDataset(utils.Dataset):
             self.add_image(
                 "Braintissue",
                 image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.tif".format(image_id))
+                path=os.path.join(dataset_dir, image_id, "images")
             )
 
     def load_mask(self, image_id):
@@ -144,19 +144,28 @@ class BraintissueDataset(utils.Dataset):
         return mask, class_ids
 
     def load_image(self, image_id):
-        """ Load a given image, convert to grayscale
+        """ Load a given image, convert to grayscale, add fluo channel
         Returns:
-        	image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
+            image: the loaded image as array of shape (HEIGHT, WIDTH, NUM_CHANNELS)
         """
 
         info = self.image_info[image_id]
+
+        # this is the path to the images/ folder containing both channels as seperate images
         path = info['path']
+
+        path_base_channel = os.path.join(path, "{}.tif".format(info["id"]))
+        path_fluo_channel = os.path.join(path, "fluo_{}.tif".format(info["id"]))
         
-        image = skimage.io.imread(path, as_gray=True)
-        #image = skimage.color.gray2rgb(image)
-        image = skimage.img_as_ubyte(image)
-        a, b = image.shape
-        image = image.reshape(a, b, 1)
+        base_channel = skimage.io.imread(path_base_channel, as_gray=True)
+        base_channel = skimage.img_as_ubyte(base_channel)
+
+        fluo_channel = skimage.io.imread(path_fluo_channel, as_gray=True)
+        fluo_channel = skimage.img_as_ubyte(fluo_channel)
+
+        # stack both channels together
+        image = [base_channel, fluo_channel]
+        image = np.stack(image, axis=-1)
 
         return image
 
