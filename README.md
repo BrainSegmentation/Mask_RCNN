@@ -5,6 +5,14 @@ This repo can be found under https://github.com/BrainSegmentation/Mask_RCNN
 All results were achieved with training on a Cloud GPU on Paperspace.
 See [our tutorial](https://github.com/BrainSegmentation/lipschitz-lizards/wiki/Paperspace-Setup) on how to set it up, what specs to choose and how to manage all dependencies using docker. We provide a [Dockerfile](Dockerfile) to minimize dependecy issues.
 
+## Data
+
+to generate artificial patches, simply run the command 'python3
+artificialPatchGenerator.py stitched_BF_Test_small_5sections.json' in the
+braintissue/artificial_generation/ directory
+
+you can add optional parameters but they are not necessary for succesful
+generation
 
 ## Run
 
