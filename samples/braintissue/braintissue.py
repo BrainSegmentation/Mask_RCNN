@@ -114,8 +114,8 @@ class BraintissueDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         # Get mask directory from image path
-        tissue_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "tissue_masks")
-        magnetic_mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "magnetic_masks")
+        tissue_mask_dir = os.path.join(os.path.dirname(info['path']), "tissue_masks")
+        magnetic_mask_dir = os.path.join(os.path.dirname(info['path']), "magnetic_masks")
 
         # Read mask files from .tif image
         tissue_masks = []
