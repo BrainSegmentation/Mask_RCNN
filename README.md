@@ -1,3 +1,22 @@
+# Segmentation Of Silicon Wafers for Electron Microscopy Using Mask-RCNN
+
+All results were achieved with training on a Cloud GPU on Paperspace.
+See [our tutorial](https://github.com/BrainSegmentation/lipschitz-lizards/wiki/Paperspace-Setup) on how to set it up, what specs to choose and how to manage all dependencies using docker. We provide a [Dockerfile](Dockerfile) to minimize dependecy issues.
+
+
+## Run
+
+to run our pre-trained models, you will need to download these weights for mask rcnn and place them in this folder:
+
+you can choose between
+
+(20 epochs two-channel (with fluorescent))[https://drive.google.com/open?id=1Mcueymhl-UBQCX4rmo3YvtHJrK2M-_TQ]
+
+and 
+
+(20 epochs single channel grayscale)[https://drive.google.com/open?id=1Vhp9MpP2z26TJ6wKyUutPA74UcJTKrXK]
+
+Below: the original repo README
 # Mask R-CNN for Object Detection and Segmentation
 
 This is an implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870) on Python 3, Keras, and TensorFlow. The model generates bounding boxes and segmentation masks for each instance of an object in the image. It's based on Feature Pyramid Network (FPN) and a ResNet101 backbone.
